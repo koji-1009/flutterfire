@@ -34,10 +34,12 @@ import java.util.concurrent.Executor
 
 /** FirebaseInAppMessagingPlugin */
 class FirebaseInAppMessagingPlugin :
-    FlutterFirebasePlugin,
-    FlutterPlugin,
-    FirebaseInAppMessagingHostApi,
-    FirebaseInAppMessagingDisplay {
+    FlutterFirebasePlugin, FlutterPlugin, FirebaseInAppMessagingHostApi {
+  // Not implemented by the plugin class itself: the app's GeneratedPluginRegistrant
+  // would then need Firebase In-App Messaging on its compile classpath (#18872).
+  private val displayComponent = FirebaseInAppMessagingDisplay { inAppMessage, callbacks ->
+    displayMessage(inAppMessage, callbacks)
+  }
   private var binaryMessenger: BinaryMessenger? = null
   private var flutterApi: FirebaseInAppMessagingFlutterApi? = null
   private var application: Application? = null
@@ -92,7 +94,7 @@ class FirebaseInAppMessagingPlugin :
           if (customDisplayEnabled) {
             FirebaseInAppMessaging.getInstance()
                 .setMessageDisplayComponent(
-                    this@FirebaseInAppMessagingPlugin,
+                    displayComponent,
                 )
           }
         }
@@ -130,7 +132,7 @@ class FirebaseInAppMessagingPlugin :
     FirebaseInAppMessagingHostApi.setUp(binding.binaryMessenger, null)
   }
 
-  override fun displayMessage(
+  private fun displayMessage(
       inAppMessage: InAppMessage,
       callbacks: FirebaseInAppMessagingDisplayCallbacks,
   ) {
@@ -305,7 +307,7 @@ class FirebaseInAppMessagingPlugin :
     customDisplayEnabled = enabled
     val fiam = FirebaseInAppMessaging.getInstance()
     if (enabled) {
-      fiam.setMessageDisplayComponent(this)
+      fiam.setMessageDisplayComponent(displayComponent)
       if (!lifecycleRegistered) {
         application?.registerActivityLifecycleCallbacks(lifecycleCallbacks)
         lifecycleRegistered = true
